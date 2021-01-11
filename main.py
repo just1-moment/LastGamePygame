@@ -24,19 +24,22 @@ grass_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_1.png')
 TILE_SIZE = grass_image.get_width()
 dirt_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_2.png'))
 
-game_map = [['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
-            ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
-            ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
-            ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
-            ['0', '0', '0', '0', '0', '0', '0', '2', '2', '2', '2', '2', '0', '0', '0', '0', '0', '0', '0', '0'],
-            ['0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'],
-            ['2', '2', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '2', '2'],
-            ['1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '1', '1'],
-            ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
-            ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
-            ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
-            ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
-            ['1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1']]
+true_scroll = [0, 0]
+
+def load_map(path):
+    f = open(os.path.join(CURRENT_PATH, path + '.txt'), 'r')
+    data = f.read()
+    f.close()
+    data = data.split('\n')
+    game_map = []
+    for row in data:
+        game_map.append(list(row))
+    return game_map
+
+game_map = load_map('map')
+
+background_objects = [[0.25, [120, 10, 70, 400]], [0.25, [280, 30, 40, 400]], [0.5, [30, 40, 40, 400]],
+                     [0.5, [130, 90, 100, 400]], [0.5, [300, 80, 120, 400]]]
 
 def collision_test(rect, tiles):
     hit_list = []
@@ -79,21 +82,28 @@ test_rect = pygame.Rect(100, 100, 100, 50)
 while True:
     display.fill((146, 244, 255))
 
+    true_scroll[0] += (player_rect.x - true_scroll[0] - 450) / 20
+    true_scroll[1] += (player_rect.y - true_scroll[1] - 200) / 20
+    scroll = true_scroll.copy()
+    scroll[0] = int(scroll[0])
+    scroll[1] = int(scroll[1])
+
+
     tile_rects = []
     y = 0
     for row in game_map:
         x = 0
         for tile in row:
             if tile == '1':
-                display.blit(dirt_image, (x * TILE_SIZE, y * TILE_SIZE))
+                display.blit(dirt_image, (x * TILE_SIZE - scroll[0], y * TILE_SIZE - scroll[1]))
             if tile == '2':
-                display.blit(grass_image, (x * TILE_SIZE, y * TILE_SIZE))
+                display.blit(grass_image, (x * TILE_SIZE - scroll[0], y * TILE_SIZE - scroll[1]))
             if tile != '0':
                 tile_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
             x += 1
         y += 1
 
-    display.blit(player_image, (player_rect.x, player_rect.y))
+    display.blit(player_image, (player_rect.x - scroll[0], player_rect.y - scroll[1]))
 
     player_movement = [0, 0]
     if moving_right:
