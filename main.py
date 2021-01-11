@@ -9,7 +9,7 @@ pygame.init()
 
 pygame.display.set_caption('Боже, запустись')
 
-WINDOW_SIZE = (600, 400)
+WINDOW_SIZE = (1200, 800)
 
 screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)
 
