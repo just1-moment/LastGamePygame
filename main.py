@@ -88,6 +88,16 @@ while True:
     scroll[0] = int(scroll[0])
     scroll[1] = int(scroll[1])
 
+    pygame.draw.rect(display, (7, 80, 75), pygame.Rect(0, 250, 950, 500))
+    for background_object in background_objects:
+        obj_rect = pygame.Rect(background_object[1][0] - scroll[0] * background_object[0],
+                               background_object[1][1] - scroll[0] * background_object[0],
+                               background_object[1][2],
+                               background_object[1][3])
+        if background_object[0] == 0.5:
+            pygame.draw.rect(display, (14, 222, 150), obj_rect)
+        else:
+            pygame.draw.rect(display, (9, 91, 254), obj_rect)
 
     tile_rects = []
     y = 0
