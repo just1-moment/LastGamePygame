@@ -1,11 +1,15 @@
 import pygame
 import sys
 import os
+import random
 
 clock = pygame.time.Clock()
 
 from pygame.locals import *
+
+pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
+pygame.mixer.set_num_channels(64)
 
 pygame.display.set_caption('Боже, запустись')
 
@@ -20,9 +24,9 @@ player_image = pygame.image.load(os.path.join(CURRENT_PATH, "image/woodcutter.pn
 player_image = pygame.transform.scale(player_image, (50, 50))
 #player_image.set_colorkey((255, 255, 255))
 
-grass_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_1.png'))
+grass_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_7.png'))
 TILE_SIZE = grass_image.get_width()
-dirt_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_2.png'))
+dirt_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_6.png'))
 
 true_scroll = [0, 0]
 
@@ -41,8 +45,47 @@ animation_frames = {}
 
 def load_animation(path, frame_durations):
     global animation_frames
-    animation_name = path.split('/')
+    animation_name = path.split('/')[-1]
+    animation_frame_data = []
+    n = 1
+    for frame in frame_durations:
+        animation_frame_id = animation_name + '_' + str(n)
+        img_loc = path + '/' + animation_frame_id + '.png'
+        animation_image = pygame.image.load(img_loc).convert()
+        animation_image.set_colorkey((255, 255, 255))
+        animation_frames[animation_frame_id] = animation_image.copy()
+        for i in range(frame):
+            animation_frame_data.append(animation_frame_id)
+        n += 1
+    return animation_frame_data
 
+def change_action(action_var, frame, new_value):
+    if action_var != new_value:
+        action_var = new_value
+        frame = 0
+    return action_var, frame
+
+animation_database = {}
+
+animation_database['run'] = load_animation(os.path.join(CURRENT_PATH, 'image/player_animations/run'), [5, 5, 5])
+animation_database['idle'] = load_animation(os.path.join(CURRENT_PATH, 'image/player_animations/idle'), [7, 7, 40])
+
+jump_sound = pygame.mixer.Sound(os.path.join(CURRENT_PATH, 'sounds\jump.wav'))
+jump_sound.set_volume(0.05)
+grass_sounds = [pygame.mixer.Sound(os.path.join(CURRENT_PATH, 'sounds\leaves01.wav')),
+                pygame.mixer.Sound(os.path.join(CURRENT_PATH, 'sounds\leaves02.wav'))]
+grass_sounds[0].set_volume(0.2)
+grass_sounds[1].set_volume(0.2)
+
+pygame.mixer.music.load(os.path.join(CURRENT_PATH, 'sounds/background_music.wav'))
+pygame.mixer.music.set_volume(0.1)
+pygame.mixer.music.play(-1)
+
+player_action = 'idle'
+player_frame = 0
+player_flip = False
+
+grass_sound_timer = 0
 
 game_map = load_map('map')
 
@@ -90,6 +133,9 @@ test_rect = pygame.Rect(100, 100, 100, 50)
 while True:
     display.fill((146, 244, 255))
 
+    if grass_sound_timer > 0:
+        grass_sound_timer -= 1
+
     true_scroll[0] += (player_rect.x - true_scroll[0] - 450) / 20
     true_scroll[1] += (player_rect.y - true_scroll[1] - 200) / 20
     scroll = true_scroll.copy()
@@ -121,8 +167,6 @@ while True:
             x += 1
         y += 1
 
-    display.blit(player_image, (player_rect.x - scroll[0], player_rect.y - scroll[1]))
-
     player_movement = [0, 0]
     if moving_right:
         player_movement[0] += 4
@@ -133,25 +177,48 @@ while True:
     if player_y_momentum > 3:
         player_y_momentum = 3
 
+    if player_movement[0] > 0:
+        player_action, player_frame = change_action(player_action, player_frame, 'run')
+        player_flip = False
+    if player_movement[0] == 0:
+        player_action, player_frame = change_action(player_action, player_frame, 'idle')
+    if player_movement[0] < 0:
+        player_action, player_frame = change_action(player_action, player_frame, 'run')
+        player_flip = True
+
     player_rect, collisions = move(player_rect, player_movement, tile_rects)
+
     if collisions['bottom']:
-        player_y_momentum = 0
+        vertical_momentum = 0
         air_timer = 0
+        if player_movement[0] != 0:
+            if grass_sound_timer == 0:
+                grass_sound_timer = 30
+                random.choice(grass_sounds).play()
     else:
         air_timer += 1
 
+    player_frame += 1
+    if player_frame >= len(animation_database[player_action]):
+        player_frame = 0
+    player_img_id = animation_database[player_action][player_frame]
+    player_img = animation_frames[player_img_id]
+    display.blit(pygame.transform.flip(player_img, player_flip, False), (player_rect.x - scroll[0], player_rect.y - scroll[1]))
 
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
         if event.type == KEYDOWN:
+            if event.key == K_w:
+                pygame.mixer.music.fadeout(1000)
             if event.key == K_RIGHT:
                 moving_right = True
             if event.key == K_LEFT:
                 moving_left = True
             if event.key == K_UP:
                 if air_timer < 6:
+                    jump_sound.play()
                     player_y_momentum = -12
         if event.type == KEYUP:
             if event.key == K_RIGHT:
