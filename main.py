@@ -16,9 +16,9 @@ screen = pygame.display.set_mode(WINDOW_SIZE, 0, 32)
 display = pygame.Surface((950, 500))
 
 CURRENT_PATH = os.path.dirname(__file__)
-player_image = pygame.image.load(os.path.join(CURRENT_PATH, "image/player.png"))
+player_image = pygame.image.load(os.path.join(CURRENT_PATH, "image/woodcutter.png"))
 player_image = pygame.transform.scale(player_image, (50, 50))
-player_image.set_colorkey((255, 255, 255))
+#player_image.set_colorkey((255, 255, 255))
 
 grass_image = pygame.image.load(os.path.join(CURRENT_PATH, 'image/ground_1.png'))
 TILE_SIZE = grass_image.get_width()
@@ -35,6 +35,14 @@ def load_map(path):
     for row in data:
         game_map.append(list(row))
     return game_map
+
+global animation_frames
+animation_frames = {}
+
+def load_animation(path, frame_durations):
+    global animation_frames
+    animation_name = path.split('/')
+
 
 game_map = load_map('map')
 
